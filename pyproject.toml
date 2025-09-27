@@ -1,0 +1,20 @@
+[project]
+name = "mcp-kms"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "Minseong Kim",email = "duruu841@gmail.com"}
+]
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.dependencies]
+python = ">=3.12,<4.0"
+fastmcp = "^2.12.4"
