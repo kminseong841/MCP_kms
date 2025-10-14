@@ -6,15 +6,21 @@ import json
 import asyncio
 from mcp_kms.agent.logging import save_log
 from mcp_kms.agent import model
-from mcp_kms.agent.mcp_tools import add_tools
+from mcp_kms.agent.mcp_tools import get_langChainTools
 from mcp_kms.agent.node_action import CallModelNode
 from mcp_kms.agent.graph import build_graph
+from mcp_kms.utils.service import McpService
 
 
 async def agent_test(user_prompt: str) -> json:
-    tools = await add_tools(server_url="http://0.0.0.0:8000/sse")
+    service = McpService()
+    session = await service.start_session(server_url="http://0.0.0.0:8000/sse")
+
+    #1) Connect with Structured Tools
+    tools = await get_langChainTools(session)
     model_with_tools: Runnable =  model.bind_tools(tools)
 
+    #2) Build Graph
     nodes = {"call_model": CallModelNode(model_with_tools), "tools": ToolNode(tools)}
     edges = {START: "call_model", "tools": "call_model"}
     conditional_edges = {"call_model": tools_condition}
@@ -23,6 +29,8 @@ async def agent_test(user_prompt: str) -> json:
     
     response = await graph.ainvoke({"messages": [("user", user_prompt)]})
     save_log(text=response)
+
+    await service.end_session()
     return response
     
 
