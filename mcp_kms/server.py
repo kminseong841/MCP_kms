@@ -1,8 +1,24 @@
 # server.py
 from fastmcp import FastMCP
+from fastmcp.server.http import create_sse_app
+from fastapi import Request, HTTPException
+from fastapi import FastAPI
+import uvicorn
 
-# 서버 인스턴스 생성
+API_KEY = "kms-secret-key"
+
+app = FastAPI()
 mcp = FastMCP("My MCP Server")
+
+@app.middleware("http")
+async def verify_api_keys(request: Request, call_next):
+    api_key = request.headers.get("Authorization")
+    if api_key != f"Bearer {API_KEY}":
+        raise HTTPException(status_code=401, detail="your authorization is failed")
+    return await call_next(request)
+
+app.mount('/sse', mcp.sse_app())
+
 
 # 데코레이터로 MCP 툴 등록
 @mcp.tool
@@ -19,7 +35,5 @@ def print_triangle_pattern(n: int) -> str:
     return "\n".join(lines)
 
 if __name__ == "__main__":
-    # 기본은 stdio이지만, HTTP로 띄우면 클라이언트나 브라우저에서 접근하기 편합니다.
-    # mcp.run()만 호출하면 stdio 전송을 사용합니다.
-    # HTTP로 띄우고 싶으면 아래처럼 transport와 포트를 지정하세요.
-    mcp.run(transport="sse", host="0.0.0.0", port=8000)
+    # mcp.run(transport="sse", host="0.0.0.0", port=8000)
+    uvicorn.run(app=app, host="0.0.0.0", port=8000)
