@@ -1,8 +1,36 @@
 # server.py
 from fastmcp import FastMCP
+from fastmcp.server.http import create_sse_app
+from typing import Callable
+import uvicorn
 
-# 서버 인스턴스 생성
+API_KEY = "kms-secret-key"
+
 mcp = FastMCP("My MCP Server")
+
+def bearer_auth_middleware(app) -> Callable:
+    async def middleware(scope, receive, send):
+        if scope["type"] == "http":
+            raw_headers = dict((k.decode().lower(), v.decode()) for k, v in scope.get("headers", []))
+            received_key = raw_headers.get("authorization")
+            if received_key != f"Bearer {API_KEY}":
+                await send({
+                    "type": "http.response.start",
+                    "status": 401,
+                    "headers": [
+                        (b"content-type", b"application/json; charset=utf-8"),
+                    ],
+                })
+                await send({
+                    "type": "http.response.body",
+                    "body": b'{"detail":"Invalid or missing API key"}',
+                    "more_body": False,
+                })
+                return 
+            await app(scope, receive, send)
+
+    return middleware
+
 
 # 데코레이터로 MCP 툴 등록
 @mcp.tool
@@ -19,7 +47,5 @@ def print_triangle_pattern(n: int) -> str:
     return "\n".join(lines)
 
 if __name__ == "__main__":
-    # 기본은 stdio이지만, HTTP로 띄우면 클라이언트나 브라우저에서 접근하기 편합니다.
-    # mcp.run()만 호출하면 stdio 전송을 사용합니다.
-    # HTTP로 띄우고 싶으면 아래처럼 transport와 포트를 지정하세요.
-    mcp.run(transport="sse", host="0.0.0.0", port=8000)
+    # mcp.run(transport="sse", host="0.0.0.0", port=8000)
+    uvicorn.run(app=bearer_auth_middleware(create_sse_app(server=mcp, message_path='', sse_path='/sse')), host="0.0.0.0", port=8000)

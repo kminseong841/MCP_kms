@@ -2,6 +2,9 @@ from mcp import ClientSession
 from mcp.client.sse import sse_client
 from typing import Optional
 
+
+API_KEY = "kms-secret-key"
+
 class McpService:
     def __init__(self):
         self.session: Optional[ClientSession] = None
@@ -9,7 +12,7 @@ class McpService:
         self.ClientSession_cm = None
     
     async def start_session(self, server_url: str) -> ClientSession:
-        self.sse_client_cm = sse_client(url=server_url)
+        self.sse_client_cm = sse_client(url=server_url, headers={"Authorization": f"Bearer {API_KEY}"})
         reader, writer = await self.sse_client_cm.__aenter__()
 
         self.ClientSession_cm = ClientSession(read_stream=reader, write_stream=writer)

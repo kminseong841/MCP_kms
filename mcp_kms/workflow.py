@@ -9,7 +9,7 @@ from mcp_kms.agent import model
 from mcp_kms.agent.mcp_tools import get_langChainTools
 from mcp_kms.agent.node_action import CallModelNode
 from mcp_kms.agent.graph import build_graph
-from mcp_kms.utils.service import McpService
+from mcp_kms.model.service import McpService
 
 
 async def agent_test(user_prompt: str) -> json:
